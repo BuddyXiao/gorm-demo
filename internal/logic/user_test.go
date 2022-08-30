@@ -27,9 +27,9 @@ func TestCreateSimple(t *testing.T) {
 		Username: "Jinzhu",
 		Phone:    18,
 	}
-	result := dao.DB.Session(&gorm.Session{DryRun: true}).Create(&user).Statement
-
-	fmt.Println(result.SQL.String())
+	result := dao.DB.Session(&gorm.Session{DryRun: false}).Create(&user)
+	fmt.Println(result.RowsAffected)
+	fmt.Println(result.Error)
 }
 
 func TestUpdateSimple(t *testing.T) {
@@ -43,12 +43,70 @@ func TestUpdateSimple(t *testing.T) {
 
 func TestDeleteSimple(t *testing.T) {
 	dao.Init()
-	id := 1563001523807162371
-	result := dao.DB.Delete(&po.User{}, id)
+	id := 1563001523807162373
+	var user po.User
+	user.ID = id
+	result := dao.DB.Session(&gorm.Session{DryRun: false}).Delete(&user)
+	fmt.Println(result.Statement.SQL.String())
 	fmt.Println(result.RowsAffected)
 	fmt.Println(result.Error)
 }
 
+func TestQuerySimple(t *testing.T) {
+	dao.Init()
+	var user = po.User{}
+	user.ID = 1563001523807162372
+	result := dao.DB.Session(&gorm.Session{DryRun: false}).Find(&user).Statement
+	fmt.Println(result.SQL.String())
+}
+
+func TestQueryList(t *testing.T) {
+	dao.Init()
+	var users []po.User
+	result := dao.DB.Session(&gorm.Session{DryRun: true}).Find(&users).Statement
+	fmt.Println(result.SQL.String())
+}
+
+func TestAssociation(t *testing.T) {
+	dao.Init()
+	var user = po.User{}
+	user.ID = 1563001523807162370
+	var orleIds []int
+	dao.DB.Model(&po.UserRole{}).Where("user_id = ?", user.ID).Select("role_id").Find(&orleIds)
+	fmt.Println("orleIds:", orleIds)
+	var orles []po.Role
+	dao.DB.Where("deleted = 0").Find(&orles, "id in ?", orleIds)
+	fmt.Println("roles:", orles)
+	dao.DB.First(&user)
+	user.Roles = orles
+	//dao.DB.Preload("Roles").Where("deleted > 0").Find(&user) 无法使用预加载
+	fmt.Println(user)
+}
+
+func TestAssociationDryRun(t *testing.T) {
+	dao.Init()
+	db := dao.DB.Session(&gorm.Session{DryRun: false})
+	var user = po.User{}
+	user.ID = 1563001523807162370
+	var orleIds []int
+	s1 := db.Model(&po.UserRole{}).Where("user_id = ?", user.ID).Select("role_id").Find(&orleIds).Statement
+	fmt.Println("orleIds:", orleIds, " , sql:", s1.SQL.String())
+	var roles []po.Role
+	s2 := db.Where("deleted = 0").Where("id in ?", orleIds).Find(&roles).Statement
+	fmt.Println("roles:", roles, ",sql:", s2.SQL.String())
+	s3 := db.First(&user).Statement
+	user.Roles = roles
+	fmt.Println("users", user, "\nsql:", s3.SQL.String())
+	//dao.DB.Preload("Roles").Where("deleted > 0").Find(&user) 无法使用预加载
+}
+
+func TestJoins(t *testing.T) {
+	dao.Init()
+	db := dao.DB.Session(&gorm.Session{DryRun: true})
+	var user = po.User{}
+	user.ID = 1563001523807162370
+	db.Joins("")
+}
 func assertCreate(t *testing.T, result *gorm.DB) {
 	t.Helper()
 	if result.Error != nil {

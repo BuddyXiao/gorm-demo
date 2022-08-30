@@ -2,7 +2,6 @@ package dao
 
 import (
 	"fmt"
-	//_ "github.com/go-sql-driver/mysql"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -26,7 +25,7 @@ func Init() {
 	}), &gorm.Config{
 		SkipDefaultTransaction: true,
 		NamingStrategy: schema.NamingStrategy{
-			TablePrefix:   "t_",                              // table name prefix, table for `User` would be `t_users`
+			TablePrefix:   "",                                // table name prefix, table for `User` would be `t_users`
 			SingularTable: true,                              // use singular table name, table for `User` would be `user` with this option enabled
 			NoLowerCase:   true,                              // skip the snake_casing of names
 			NameReplacer:  strings.NewReplacer("CID", "Cid"), // use name replacer to change struct/field name before convert it to db name
